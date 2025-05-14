@@ -34,8 +34,8 @@ x_traj = np.zeros((DIM, N_iter))
 triggering_times = np.zeros((DIM, N_iter))
 
 x_average_consensus = 3.8044
-x = np.array([[6.2945], [8.1158], [-7.4603], [8.1675]])
-x_hat = np.array([[6.2945], [8.1158], [-7.4603], [8.1675]])
+x = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
+x_hat = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
 u = np.zeros((DIM, 1))
 for i in range(DIM):
     u[i] = update_control_input(x_hat, i, L) # init control input
@@ -47,8 +47,9 @@ for k in range(N_iter):
         if basic_trigger_condition(e, q_i, i, L):
             x_hat[i] = x[i]
             triggering_times[i, k] = 1
-            for m in range(DIM):
-                u[m] = update_control_input(x_hat, m, L)
+            u[i] = update_control_input(x_hat, i, L)
+            # for m in range(DIM):
+            #     u[m] = update_control_input(x_hat, m, L)
     x = x + dt * u
     x_traj[:, k] = x.flatten()
 
