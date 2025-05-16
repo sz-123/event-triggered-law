@@ -51,7 +51,9 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
         tij2 = np.maximum(t_vec, next_trigger_time)
 
         for j in range(DIM):
-            sum += np.abs(L[i, j] * (tij1[j] - trigger_time[i]) * (x_hat[j] - x_hat[i]))
+            sum += L[i, j] * (tij1[j] - trigger_time[i]) * (x_hat[j] - x_hat[i])
+
+        sum = np.abs(sum)
 
         for j in range(DIM):
             if j != i:
