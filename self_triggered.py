@@ -34,24 +34,19 @@ k5 = DIM * ALPHA * ALPHA / (RHO - BETA)
 k4 = lyapunov_function(X_INIT) - k5
 
 def f_function(t):
-    return 2 * np.sqrt(k4 * np.exp(- RHO * t) + k5 * np.exp(- BETA * t))
+    return 2. * np.sqrt(k4 * np.exp(- RHO * t) + k5 * np.exp(- BETA * t))
 
 def integrand(s, i, j, L):
-        return (ALPHA / L[i,i] + ALPHA / L[j,j]) * np.exp(- BETA / 2 * s) + f_function(s)
+        return (ALPHA / np.sqrt(L[i,i]) + ALPHA / np.sqrt(L[j,j])) * np.exp(- BETA / 2. * s) + f_function(s)
 
 def g_i_rhs(t, i, L):
-        return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2 * t)
+        return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * t)
 
 def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i, L):
-    # t_history = np.linspace(0, 5, int(5 / dt))
-
-    # def k_j(t):
-    #     return np.searchsorted(t_history, t) - 1
     
     def g_i(t):
         sum = 0
         t_vec = np.ones((DIM, 1)) * t
-        i_trigger_time_vec = np.ones((DIM, 1)) * trigger_time[i]
         tij1 = np.minimum(t_vec, next_trigger_time)
         tij2 = np.maximum(t_vec, next_trigger_time)
 
@@ -69,22 +64,19 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
         rhs = g_i_rhs(t, i, L)
 
         return sum - rhs
+    
     # Use root_scalar to find the root of g_i(t) = 0
-    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + 5], method='brentq')
+    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + .5], method='brentq')
 
+    if not result.converged:
+        print(f"Root finding did not converge for agent {i} at time {trigger_time[i]}")
+        # print verbose output
+        print(f"Root finding result: {result}")
+    
     # round result.root to 0.001
     root_round = np.round(result.root, 3)
     
     return root_round
-
-def calculate_q_i(x_hat, i, L):
-    sum = 0
-    for j in range(DIM):
-        sum += L[i, j] * (x_hat[j] - x_hat[i]) * (x_hat[j] - x_hat[i])
-    return - 1. / 2. * sum
-
-def basic_trigger_condition(e, q_i, i, L, sigma=0.5):
-    return True if e[i] * e[i] - sigma / (2 * L[i,i]) * q_i > 0 else False
 
 def update_control_input(x_hat, i, L):
     u_i = 0
@@ -105,18 +97,20 @@ x_average_consensus = 3.8044
 x = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
 x_hat = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
 u = np.zeros((DIM, 1))
-for i in range(DIM):
-    u[i] = update_control_input(x_hat, i, L) # init control input
+# for i in range(DIM):
+#     u[i] = update_control_input(x_hat, i, L) # init control input
 
 for k in range(N_iter):
     for i in range(DIM):
-        if next_triggering_time[i] == k:
+        if next_triggering_time[i] == k * dt:
             # save the next triggering time to the dictionary
             triggering_dict[i].append(next_triggering_time[i])
             triggering_time[i] = next_triggering_time[i]
             x_hat[i] = x[i]
-            u[i] = update_control_input(x_hat, i, L)
+            print("in agent", i, "at time ", k * dt)
+            u[i] = update_control_input(x_hat, i, L) # by using x_hat, we are assuming the agent already listened at the triggering time of the others
             next_triggering_time[i] = solving_for_the_next_trigger_time(triggering_time, next_triggering_time, x_hat, i, L)
+            print('next_triggering_time:', next_triggering_time[i], "in agent", i, "at time ", k * dt)
             # for m in range(DIM):
             #     u[m] = update_control_input(x_hat, m, L)
     x = x + dt * u
@@ -132,7 +126,7 @@ for i in range(DIM):
     ax1.plot(x_traj[i, :], label='x' + str(i+1))
     # plot the triggering times as dots, if it's not empty
     if triggering_dict[i]:
-        ax2.plot(triggering_dict[i], (i+1) * 0.2, 'o', label='Triggering Time ' + str(i+1))
+        ax2.plot(triggering_dict[i], (i+1) * 0.2 * np.ones(len(triggering_dict[i])), 'o', label='Triggering Time ' + str(i+1))
     else:
         ax2.plot([], [], 'o', label='Triggering Time ' + str(i+1))  # Empty plot for legend
 ax1.legend()
@@ -146,10 +140,3 @@ ax1.axhline(y=x_average_consensus, color='r', linestyle='--', label='Consensus V
 ax1.legend()
 
 plt.show()
-
-
-        
-
-    
-
-
