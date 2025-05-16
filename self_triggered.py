@@ -13,7 +13,7 @@ L = np.array([[3.4, -3.4, 0., 0.],
 
 DIM = L.shape[0]
 
-dt = 0.00001
+dt = 0.001
 
 # get the minimum positive eigenvalue of L
 eigvals = np.linalg.eigvals(L)
