@@ -13,6 +13,8 @@ L = np.array([[3.4, -3.4, 0., 0.],
 
 DIM = L.shape[0]
 
+dt = 0.00001
+
 # get the minimum positive eigenvalue of L
 eigvals = np.linalg.eigvals(L)
 print('Eigenvalues of L:', eigvals)
@@ -73,15 +75,15 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
         return sum - rhs
     
     # Use root_scalar to find the root of g_i(t) = 0
-    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + .2], method='brentq')
+    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + 1.], method='brentq')
 
     if not result.converged:
         print(f"Root finding did not converge for agent {i} at time {trigger_time[i]}")
         # print verbose output
         print(f"Root finding result: {result}")
     
-    # round result.root to 0.001 from the left
-    root_round = np.floor(result.root / 0.001) * 0.001
+    # round result.root to dt from the left
+    root_round = np.floor(result.root / dt) * dt
     
     return root_round
 
@@ -91,8 +93,7 @@ def update_control_input(x_hat, i, L):
         u_i -= L[i, j] * x_hat[j]
     return u_i
 
-N_iter = 2000 # dt = 0.001
-dt = 0.001
+N_iter = int(2 / dt)
 # basic event-triggered law
 x_traj = np.zeros((DIM, N_iter))
 triggering_time = np.zeros((DIM, 1))
