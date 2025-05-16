@@ -41,8 +41,8 @@ def f_function(t):
 def integrand(s, i, j, L):
         return (ALPHA / np.sqrt(L[i,i]) + ALPHA / np.sqrt(L[j,j])) * np.exp(- BETA / 2. * s) + f_function(s)
 
-def g_i_rhs(t, i, L):
-        return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * t)
+def g_i_rhs(t, i, trigger_time, L):
+        return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * (t - trigger_time[i]))
 
 def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i, L):
     
@@ -68,7 +68,7 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
                 integral_value, _ = quad(integrand_wrapper, next_trigger_time[j], tij2[j])
                 sum += - L[i, j] * integral_value
         
-        rhs = g_i_rhs(t, i, L)
+        rhs = g_i_rhs(t, i, trigger_time, L)
 
         # print(f"g_i(t): {sum} - {rhs} = {sum - rhs}")
 
