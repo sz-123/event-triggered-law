@@ -18,7 +18,9 @@ dt = 0.001
 # get the minimum positive eigenvalue of L
 eigvals = np.linalg.eigvals(L)
 print('Eigenvalues of L:', eigvals)
-min_eigval = np.min(eigvals[eigvals > 0])
+# min_eigval = np.min(eigvals[eigvals > 0])
+# taking the second smallest eigenvalue
+min_eigval = np.partition(eigvals, 1)[1]
 RHO = min_eigval
 print('Minimum positive eigenvalue of L:', min_eigval)
 ALPHA = 10.
@@ -44,11 +46,18 @@ def integrand(s, i, j, L):
 def g_i_rhs(t, i, trigger_time, L):
         return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * (t))
 
-def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i, L):
+def solving_for_the_next_trigger_time(trigger_time, next_trigger_time_origin, x_hat, i, L):
     
     def g_i(t):
         sum = 0
         t_vec = np.ones((DIM, 1)) * t
+        # make a deep copy of next_trigger_time
+        next_trigger_time = copy.deepcopy(next_trigger_time_origin)
+        # check if any element in next_trigger_time is equal to trigger_time[i], if so, set it to trigger_time[i]
+        for j in range(DIM):
+            if trigger_time[j] == trigger_time[i]:
+                next_trigger_time[j] = trigger_time[i]
+        
         tij1 = np.minimum(t_vec, next_trigger_time)
         tij2 = np.maximum(t_vec, next_trigger_time)
 
