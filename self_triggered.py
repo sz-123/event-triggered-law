@@ -50,6 +50,9 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
         tij1 = np.minimum(t_vec, next_trigger_time)
         tij2 = np.maximum(t_vec, next_trigger_time)
 
+        # print t, tij1, tij2, in one line
+        # print(f"t: {t}, tij1: {tij1.flatten()}, tij2: {tij2.flatten()}")
+
         for j in range(DIM):
             sum += L[i, j] * (tij1[j] - trigger_time[i]) * (x_hat[j] - x_hat[i])
 
@@ -65,18 +68,20 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time, x_hat, i,
         
         rhs = g_i_rhs(t, i, L)
 
+        # print(f"g_i(t): {sum} - {rhs} = {sum - rhs}")
+
         return sum - rhs
     
     # Use root_scalar to find the root of g_i(t) = 0
-    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + .5], method='brentq')
+    result = root_scalar(g_i, bracket=[trigger_time[i], trigger_time[i] + .2], method='brentq')
 
     if not result.converged:
         print(f"Root finding did not converge for agent {i} at time {trigger_time[i]}")
         # print verbose output
         print(f"Root finding result: {result}")
     
-    # round result.root to 0.001
-    root_round = np.round(result.root, 3)
+    # round result.root to 0.001 from the left
+    root_round = np.floor(result.root / 0.001) * 0.001
     
     return root_round
 
@@ -109,10 +114,10 @@ for k in range(N_iter):
             triggering_dict[i].append(next_triggering_time[i])
             triggering_time[i] = next_triggering_time[i]
             x_hat[i] = x[i]
-            print("in agent", i, "at time ", k * dt)
+            # print("in agent", i, "at time ", k * dt)
             u[i] = update_control_input(x_hat, i, L) # by using x_hat, we are assuming the agent already listened at the triggering time of the others
             next_triggering_time[i] = solving_for_the_next_trigger_time(triggering_time, next_triggering_time, x_hat, i, L)
-            print('next_triggering_time:', next_triggering_time[i], "in agent", i, "at time ", k * dt)
+            # print('next_triggering_time:', next_triggering_time[i], "in agent", i, "at time ", k * dt)
             # for m in range(DIM):
             #     u[m] = update_control_input(x_hat, m, L)
     x = x + dt * u
