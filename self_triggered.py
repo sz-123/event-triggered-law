@@ -111,7 +111,7 @@ for k in range(N_iter):
     for i in range(DIM):
         if next_triggering_time[i] == k * dt:
             # save the next triggering time to the dictionary
-            triggering_dict[i].append(next_triggering_time[i])
+            triggering_dict[i].append(k * dt)
             triggering_time[i] = next_triggering_time[i]
             x_hat[i] = x[i]
             # print("in agent", i, "at time ", k * dt)
@@ -123,6 +123,7 @@ for k in range(N_iter):
     x = x + dt * u
     x_traj[:, k] = x.flatten()
 
+
 # Plotting subplots1: traj; subplots2: triggering times as dots
 fig = plt.figure(figsize=(8, 6))
 ax1 = fig.add_subplot(211)
@@ -132,10 +133,7 @@ ax2.set_title('Triggering Times')
 for i in range(DIM):
     ax1.plot(x_traj[i, :], label='x' + str(i+1))
     # plot the triggering times as dots, if it's not empty
-    if triggering_dict[i]:
-        ax2.plot(triggering_dict[i], (i+1) * 0.2 * np.ones(len(triggering_dict[i])), 'o', label='Triggering Time ' + str(i+1))
-    else:
-        ax2.plot([], [], 'o', label='Triggering Time ' + str(i+1))  # Empty plot for legend
+    ax2.plot(np.array(triggering_dict[i]).flatten(), (i+1) * np.ones(len(triggering_dict[i])), '*', label='Triggering Time' + str(i+1))
 ax1.legend()
 ax2.legend()
 ax1.set_xlabel('Time')
