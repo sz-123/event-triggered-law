@@ -24,6 +24,7 @@ min_eigval = np.partition(eigvals, 1)[1]
 RHO = min_eigval
 print('Minimum positive eigenvalue of L:', min_eigval)
 ALPHA = 10.
+ALPHA_RHS = 30.
 BETA = 1.
 CHI = 10.
 THETA = 1.
@@ -32,10 +33,12 @@ Kn = np.eye(DIM) - np.ones((DIM, DIM)) / DIM
 X_INIT = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
 
 def lyapunov_function(x):
-    return 0.5 * np.dot(x.T, np.dot(Kn, x))
+    return 0.5 * np.dot(x.T, np.dot(Kn, x)).flatten()[0]
 
 k5 = DIM * ALPHA * ALPHA / (RHO - BETA)
 k4 = lyapunov_function(X_INIT) - k5
+print('k4:', k4)
+print('k5:', k5)
 
 def f_function(t):
     return 2. * np.sqrt(k4 * np.exp(- RHO * t) + k5 * np.exp(- BETA * t))
@@ -44,7 +47,7 @@ def integrand(s, i, j, L):
         return (ALPHA / np.sqrt(L[i,i]) + ALPHA / np.sqrt(L[j,j])) * np.exp(- BETA / 2. * s) + f_function(s)
 
 def g_i_rhs(t, i, trigger_time, L):
-        return ALPHA / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * (t))
+        return ALPHA_RHS / np.sqrt(L[i,i]) * np.exp( - BETA / 2. * (t))
 
 def solving_for_the_next_trigger_time(trigger_time, next_trigger_time_origin, x_hat, i, L):
     
@@ -75,7 +78,7 @@ def solving_for_the_next_trigger_time(trigger_time, next_trigger_time_origin, x_
                 integrand_wrapper = lambda s: integrand(s, i, j, L)
 
                 integral_value, _ = quad(integrand_wrapper, next_trigger_time[j], tij2[j])
-                sum += - L[i, j] * integral_value
+                sum += np.abs(L[i, j] * integral_value)
         
         rhs = g_i_rhs(t, i, trigger_time, L)
 
@@ -102,7 +105,7 @@ def update_control_input(x_hat, i, L):
         u_i -= L[i, j] * x_hat[j]
     return u_i
 
-N_iter = int(2 / dt)
+N_iter = int(2. / dt)
 # basic event-triggered law
 x_traj = np.zeros((DIM, N_iter))
 triggering_time = np.zeros((DIM, 1))
@@ -118,18 +121,22 @@ u = np.zeros((DIM, 1))
 #     u[i] = update_control_input(x_hat, i, L) # init control input
 
 for k in range(N_iter):
+    triggering_agents = []
     for i in range(DIM):
         if next_triggering_time[i] == k * dt:
             # save the next triggering time to the dictionary
             triggering_dict[i].append(k * dt)
             triggering_time[i] = next_triggering_time[i]
             x_hat[i] = x[i]
+            triggering_agents.append(i)
             # print("in agent", i, "at time ", k * dt)
-            u[i] = update_control_input(x_hat, i, L) # by using x_hat, we are assuming the agent already listened at the triggering time of the others
-            next_triggering_time[i] = solving_for_the_next_trigger_time(triggering_time, next_triggering_time, x_hat, i, L)
+    for i in triggering_agents:
+        next_triggering_time[i] = solving_for_the_next_trigger_time(triggering_time, next_triggering_time, x_hat, i, L)
             # print('next_triggering_time:', next_triggering_time[i], "in agent", i, "at time ", k * dt)
             # for m in range(DIM):
             #     u[m] = update_control_input(x_hat, m, L)
+    for i in range(DIM):
+        u[i] = update_control_input(x_hat, i, L) # by using x_hat, we are assuming the agent already listened at the triggering time of the others
     x = x + dt * u
     x_traj[:, k] = x.flatten()
 
