@@ -1,0 +1,1 @@
+Implementation in Python the event-triggered & self-triggered control law in the paper "Yi, Xinlei, Kun Liu, Dimos V. Dimarogonas, and Karl H. Johansson. "Dynamic event-triggered and self-triggered control for multi-agent systems." IEEE Transactions on Automatic Control 64, no. 8 (2018): 3300-3307.".
