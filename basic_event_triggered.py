@@ -42,14 +42,19 @@ for i in range(DIM):
 
 for k in range(N_iter):
     e = x_hat - x
+    triggered_agents = []
     for i in range(DIM):
-        q_i = calculate_q_i(x_hat, i, L)
-        if basic_trigger_condition(e, q_i, i, L):
-            x_hat[i] = x[i]
-            triggering_times[i, k] = 1
-            u[i] = update_control_input(x_hat, i, L)
-            # for m in range(DIM):
-            #     u[m] = update_control_input(x_hat, m, L)
+            q_i = calculate_q_i(x_hat, i, L)
+            if basic_trigger_condition(e, q_i, i, L):
+                triggered_agents.append(i)
+    # update x_hat for triggered agents
+    for i in triggered_agents:
+        x_hat[i] = x[i]
+        triggering_times[i, k] = 1
+    # Recompute the control input for all agents
+    for m in range(DIM):
+        u[m] = update_control_input(x_hat, m, L)
+    # Update x
     x = x + dt * u
     x_traj[:, k] = x.flatten()
 
