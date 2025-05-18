@@ -13,6 +13,11 @@ DIM = L.shape[0]
 
 N_iter = 2000 # dt = 0.001
 dt = 0.001
+CHI_INIT = 10.
+BETA = 1.
+DELTA = 1.
+SIGMA = 0.5
+THETA = 1.
 
 def calculate_q_i(x_hat, i, L):
     sum = 0
@@ -20,8 +25,8 @@ def calculate_q_i(x_hat, i, L):
         sum += L[i, j] * (x_hat[j] - x_hat[i]) * (x_hat[j] - x_hat[i])
     return - 1. / 2. * sum
 
-def basic_trigger_condition(e, q_i, i, L, sigma=0.5):
-    return True if e[i] * e[i] - sigma / (2 * L[i,i]) * q_i > 0 else False
+def dynamic_trigger_condition(e, chi, q_i, i, L, sigma=SIGMA):
+    return True if THETA * (L[i,i] * e[i] * e[i] - sigma / (2 * L[i,i]) * q_i) > chi[i] else False
 
 def update_control_input(x_hat, i, L):
     u_i = 0
@@ -36,6 +41,7 @@ triggering_times = np.zeros((DIM, N_iter))
 x_average_consensus = 3.8044
 x = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
 x_hat = np.array([[6.2945], [8.1158], [-7.4603], [8.2675]])
+chi = np.ones ((DIM, 1)) * CHI_INIT
 u = np.zeros((DIM, 1))
 for i in range(DIM):
     u[i] = update_control_input(x_hat, i, L) # init control input
@@ -44,9 +50,10 @@ for k in range(N_iter):
     e = x_hat - x
     triggered_agents = []
     for i in range(DIM):
-            q_i = calculate_q_i(x_hat, i, L)
-            if basic_trigger_condition(e, q_i, i, L):
-                triggered_agents.append(i)
+        q_i = calculate_q_i(x_hat, i, L)
+        if dynamic_trigger_condition(e, chi, q_i, i, L):
+            triggered_agents.append(i)
+        chi[i] = chi[i] + dt * (- BETA * chi[i] + DELTA * (SIGMA / 2. * q_i - L[i,i] * e[i] * e[i]))
     # update x_hat for triggered agents
     for i in triggered_agents:
         x_hat[i] = x[i]
@@ -54,7 +61,8 @@ for k in range(N_iter):
     # Recompute the control input for all agents
     for m in range(DIM):
         u[m] = update_control_input(x_hat, m, L)
-    # Update x
+        
+        
     x = x + dt * u
     x_traj[:, k] = x.flatten()
 
